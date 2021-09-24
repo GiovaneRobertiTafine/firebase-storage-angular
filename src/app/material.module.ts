@@ -50,6 +50,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableModule } from '@angular/material/table';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 @NgModule({
     imports: [],
@@ -74,7 +75,7 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
         // MatMenuModule,
         // MatNativeDateModule,
         // MatPaginatorModule,
-        // MatProgressBarModule,
+        MatProgressBarModule,
         MatProgressSpinnerModule,
         // MatRadioModule,
         // MatRippleModule,
