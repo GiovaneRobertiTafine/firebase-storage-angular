@@ -16,24 +16,26 @@
                     </button>
                 </div>
                 <ng-template #uploading>
-                    <div fxLayout="row" fxLayoutAlign="end center" fxFlex="40">
-                        <ng-container *ngIf="!(f.finished|async) && !((f.error | async) || (f.canceled | async))">
-                            <span style="font-style: italic; margin-right: 10px;">{{f.bytesUploaded | async}}
-                                bytes</span>
-                            <mat-progress-bar mode="determinate" [value]="f.percentage|async" style="max-width: 300px;">
+                    <div fxLayout="row" fxLayoutAlign="end center" fxFlex="auto">
+                        <ng-container *ngIf="f.state === 'running' || f.state === 'paused'">
+                            <div style="font-style: italic; margin-right: 10px;">
+                                {{f.bytesUploaded}} bytes {{f.state}}</div>
+                            <mat-progress-bar mode="determinate" [value]="f.percentage">
                             </mat-progress-bar>
-                            <button mat-icon-button color="accent" *ngIf="f.uploading|async" (click)="f.task.cancel()">
+                            <button mat-icon-button color="accent" *ngIf="f.state === 'running' || f.state === 'paused'"
+                                (click)="f.task.cancel()">
                                 <mat-icon>cancel</mat-icon>
                             </button>
-                            <button mat-icon-button color="warn" *ngIf="f.uploading|async" (click)="f.task.pause()">
+                            <button mat-icon-button color="warn" *ngIf="f.state === 'running'" (click)="f.task.pause()">
                                 <mat-icon>pause</mat-icon>
                             </button>
-                            <button mat-icon-button color="primary" *ngIf="f.paused|async" (click)="f.task.resume()">
+                            <button mat-icon-button color="primary" *ngIf="f.state === 'paused'"
+                                (click)="f.task.resume()">
                                 <mat-icon>play_arrow</mat-icon>
                             </button>
                         </ng-container>
-                        <mat-icon *ngIf="(f.error | async) || (f.canceled | async)" color="warn">error</mat-icon>
-                        <mat-icon color="primary" *ngIf="f.finished|async">done</mat-icon>
+                        <mat-icon *ngIf="f.state === 'canceled' || f.state === 'error'" color="warn">error</mat-icon>
+                        <mat-icon color="primary" *ngIf="f.state === 'success'">done</mat-icon>
                     </div>
                 </ng-template>
             </mat-card>
@@ -43,5 +45,6 @@
                 </button>
             </div>
         </div>
+
     </div>
 </div>

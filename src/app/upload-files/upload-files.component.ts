@@ -23,12 +23,12 @@ export class UploadFilesComponent implements OnInit {
             this.files.push({
                 file: files.item(index),
                 percentage: null,
-                uploading: null,
+                // uploading: null,
                 bytesUploaded: null,
-                canceled: null,
-                error: null,
-                finished: null,
-                paused: null,
+                // canceled: null,
+                // error: null,
+                // finished: null,
+                // paused: null,
                 state: null,
                 task: null
             });
