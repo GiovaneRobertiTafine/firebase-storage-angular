@@ -3,13 +3,22 @@ import { AngularFireStorage } from '@angular/fire/storage';
 import { FileEntry, State } from '../models/fileentry.model';
 import { map, catchError, finalize, tap } from 'rxjs/operators';
 import { of, from, Observable } from 'rxjs';
+import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/firestore';
+import { MyFile } from '../models/my-file.model';
 
 @Injectable({
     providedIn: 'root'
 })
 export class FilesService {
 
-    constructor(private storage: AngularFireStorage) { }
+    private filesCollection: AngularFirestoreCollection<MyFile>;
+
+    constructor(
+        private storage: AngularFireStorage,
+        private afs: AngularFirestore
+    ) {
+        this.filesCollection = afs.collection('myFiles', ref => ref.orderBy('date', 'desc'));
+    }
 
     onDropFiles(f: File) {
         let path = `myFiles/${f.name}`;
@@ -23,20 +32,30 @@ export class FilesService {
     }
 
     upload(f: FileEntry) {
-        let newFileName = `${(new Date()).getTime()}_${f.file.name}`;
+        let newFileName = `${this.convertDate(new Date())}_${f.file.name}`;
         let path = `myFiles/${newFileName}`;
         f.task = this.storage.upload(path, f.file);
         // f.state = f.task.snapshotChanges()
         //     .pipe(
-        //         map((s) => f.task.task.snapshot.state),
+        //         map((s) => {
+        //             f.percentage = ((s.bytesTransferred * 100) / s.totalBytes);
+        //             return f.task.task.snapshot.state;
+        //         }),
         //         catchError(s => {
         //             return of(f.task.task.snapshot.state);
         //         })
         //     );
-        // f.state = f.task.snapshotChanges().subscribe()
-        // f.state = f.task.snapshotChanges().pipe(map(s => s.state));
         f.task.snapshotChanges()
-            .pipe(tap(n => f.percentage = ((n.bytesTransferred * 100) / n.totalBytes)))
+            .pipe(
+                tap(n => f.percentage = ((n.bytesTransferred * 100) / n.totalBytes)),
+                finalize(() => {
+                    if (f.state === 'success') {
+                        this.filesCollection.add({
+                            fileName: f.file.name, path: path, date: (new Date()).getTime(), size: f.file.size,
+                        });
+                    }
+                })
+            )
             .subscribe(
                 (s) => {
                     f.bytesUploaded = s.bytesTransferred;
@@ -46,7 +65,7 @@ export class FilesService {
                     f.state = f.task.task.snapshot.state as State;
                 },
             );
-        this.fillAttributes(f);
+        // this.fillAttributes(f);
     }
 
     fillAttributes(f: FileEntry) {
@@ -58,4 +77,28 @@ export class FilesService {
         // f.canceled = f?.state.pipe(map((s) => s == "canceled"));
         // f.bytesUploaded = f.task.snapshotChanges().pipe((map(s => s.bytesTransferred)));
     }
+
+    convertDate(inputFormat) {
+        function pad(s) { return (s < 10) ? '0' + s : s; }
+        return `${pad(inputFormat.getDate())}${pad(inputFormat.getMonth() + 1)}${inputFormat.getFullYear()}`;
+    }
+
+    getFiles(): Observable<MyFile[]> {
+        return this.filesCollection.snapshotChanges()
+            .pipe(map((actions) => {
+                return actions.map(a => {
+                    const file: MyFile = a.payload.doc.data();
+                    const id = a.payload.doc.id;
+                    const url = this.storage.ref(file.path).getDownloadURL();
+                    return { id, ...file, url };
+                });
+            }));
+    }
+
+    deleteFile(f: MyFile): void {
+        this.storage.ref(f.path).delete();
+        this.filesCollection.doc(f.id).delete();
+    }
+
+
 }
